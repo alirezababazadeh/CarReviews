@@ -3,22 +3,14 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Post;
 use App\Repository\ReviewRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+
 
 #[ORM\Entity(repositoryClass: ReviewRepository::class)]
-#[ApiResource(
-    shortName: "Review Apis",
-    operations: [
-        new GetCollection(),
-        new Get(),
-        new Post()
-    ]
-)]
+#[ApiResource]
 class Review
 {
     #[ORM\Id]
@@ -27,7 +19,9 @@ class Review
     private ?int $id = null;
 
     #[ORM\Column]
-    private ?int $review = null;
+    #[Assert\LessThan(11)]
+    #[Assert\GreaterThan(0)]
+    private ?int $rating = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $text = null;
@@ -41,14 +35,14 @@ class Review
         return $this->id;
     }
 
-    public function getReview(): ?int
+    public function getRating(): ?int
     {
-        return $this->review;
+        return $this->rating;
     }
 
-    public function setReview(int $review): static
+    public function setRating(int $rating): static
     {
-        $this->review = $review;
+        $this->rating = $rating;
 
         return $this;
     }
