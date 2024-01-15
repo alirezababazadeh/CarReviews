@@ -49,6 +49,7 @@ class Review
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull]
     private ?Car $car = null;
 
     public function getId(): ?int
