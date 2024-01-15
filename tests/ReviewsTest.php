@@ -1,5 +1,6 @@
 <?php
 
+namespace App\Tests;
 
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use App\Entity\Review;
@@ -8,7 +9,7 @@ use App\Factory\ReviewFactory;
 use Zenstruck\Foundry\Test\Factories;
 use Zenstruck\Foundry\Test\ResetDatabase;
 
-class ReviewsTest
+class ReviewsTest extends ApiTestCase
 {
     use ResetDatabase, Factories;
 
@@ -16,7 +17,7 @@ class ReviewsTest
     {
         ReviewFactory::createMany(100);
 
-        $response = static::createClient()->request('GET', '/reviews');
+        $response = static::createClient()->request('GET', '/api/reviews');
 
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('content-type', 'application/ld+json; charset=utf-8');
@@ -46,7 +47,7 @@ class ReviewsTest
             'text' => 'Nice',
             'carId' => '4',
         ]);
-        $response = static::createClient()->request('POST', '/reviews', ['json' => [
+        $response = static::createClient()->request('POST', '/api/reviews', ['json' => [
             'rating' => '8',
             'text' => 'Nice',
             'carId' => $car->getId(),
@@ -61,13 +62,13 @@ class ReviewsTest
             'text' => 'Nice',
             'carId' => $car->getId(),
         ]);
-        $this->assertMatchesRegularExpression('~^/reviews/\d+$~', $response->toArray()['@id']);
+        $this->assertMatchesRegularExpression('~^/api/reviews/\d+$~', $response->toArray()['@id']);
         $this->assertMatchesResourceItemJsonSchema(Review::class);
     }
 
     public function testCreateInvalid(): void
     {
-        static::createClient()->request('POST', '/reviews', ['json' => [
+        static::createClient()->request('POST', '/api/reviews', ['json' => [
             'rating' => '134',
         ]]);
 

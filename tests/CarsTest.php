@@ -8,7 +8,7 @@ use App\Factory\CarFactory;
 use Zenstruck\Foundry\Test\Factories;
 use Zenstruck\Foundry\Test\ResetDatabase;
 
-class CarsTest
+class CarsTest extends ApiTestCase
 {
     use ResetDatabase, Factories;
 
@@ -16,7 +16,7 @@ class CarsTest
     {
         CarFactory::createMany(100);
 
-        $response = static::createClient()->request('GET', '/cars');
+        $response = static::createClient()->request('GET', '/api/cars');
 
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('content-type', 'application/ld+json; charset=utf-8');
@@ -41,7 +41,7 @@ class CarsTest
 
     public function testCreate(): void
     {
-        $response = static::createClient()->request('POST', '/cars', ['json' => [
+        $response = static::createClient()->request('POST', '/api/cars', ['json' => [
             'brand' => 'Honda',
             'model' => 'Amaze',
             'color' => 'blue',
@@ -56,13 +56,13 @@ class CarsTest
             'model' => 'Amaze',
             'color' => 'blue'
         ]);
-        $this->assertMatchesRegularExpression('~^/cars/\d+$~', $response->toArray()['@id']);
+        $this->assertMatchesRegularExpression('~^/api/cars/\d+$~', $response->toArray()['@id']);
         $this->assertMatchesResourceItemJsonSchema(Car::class);
     }
 
     public function testCreateInvalid(): void
     {
-        static::createClient()->request('POST', '/cars', ['json' => [
+        static::createClient()->request('POST', '/api/cars', ['json' => [
             'year' => '134',
         ]]);
 
