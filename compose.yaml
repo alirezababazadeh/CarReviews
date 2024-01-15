@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   database:
@@ -11,6 +11,23 @@ services:
       - database_data:/var/lib/postgresql/data:rw
     ports:
       - "5432:5432"
+    networks:
+      - car_reviews
+
+  worker:
+    depends_on:
+      - database
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - car_reviews
 
 volumes:
   database_data:
+
+networks:
+  car_reviews:
