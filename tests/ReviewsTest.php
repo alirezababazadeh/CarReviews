@@ -23,17 +23,10 @@ class ReviewsTest extends ApiTestCase
         $this->assertResponseHeaderSame('content-type', 'application/ld+json; charset=utf-8');
 
         $this->assertJsonContains([
-            '@context' => '/contexts/Review',
-            '@id' => '/reviews',
+            '@context' => '/api/contexts/Review',
+            '@id' => '/api/reviews',
             '@type' => 'hydra:Collection',
             'hydra:totalItems' => 100,
-            'hydra:view' => [
-                '@id' => '/reviews?page=1',
-                '@type' => 'hydra:PartialCollectionView',
-                'hydra:first' => '/reviews?page=1',
-                'hydra:last' => '/reviews?page=4',
-                'hydra:next' => '/reviews?page=2',
-            ],
         ]);
 
         $this->assertCount(30, $response->toArray()['hydra:member']);
@@ -43,24 +36,33 @@ class ReviewsTest extends ApiTestCase
     public function testCreate(): void
     {
         $car = CarFactory::createOne([
-            'rating' => '8',
-            'text' => 'Nice',
-            'carId' => '4',
+            'brand' => 'Toyota',
+            'model' => 'Camary',
+            'color' => 'red',
         ]);
-        $response = static::createClient()->request('POST', '/api/reviews', ['json' => [
-            'rating' => '8',
-            'text' => 'Nice',
-            'carId' => $car->getId(),
-        ]]);
+
+        $response = static::createClient()->request(
+            'POST',
+            '/api/reviews',
+            [
+                'json' => [
+                    'rating' => 8,
+                    'text' => 'Nice',
+                    'car' => '/api/cars/' . $car->getId(),
+                ],
+                'headers' => [
+                    'content-type' => 'application/ld+json; charset=utf-8'
+                ]
+            ]);
 
         $this->assertResponseStatusCodeSame(201);
         $this->assertResponseHeaderSame('content-type', 'application/ld+json; charset=utf-8');
         $this->assertJsonContains([
-            '@context' => '/contexts/Review',
+            '@context' => '/api/contexts/Review',
             '@type' => 'Review',
-            'rating' => '8',
+            'rating' => 8,
             'text' => 'Nice',
-            'carId' => $car->getId(),
+            'car' => '/api/cars/' . $car->getId(),
         ]);
         $this->assertMatchesRegularExpression('~^/api/reviews/\d+$~', $response->toArray()['@id']);
         $this->assertMatchesResourceItemJsonSchema(Review::class);
@@ -68,54 +70,70 @@ class ReviewsTest extends ApiTestCase
 
     public function testCreateInvalid(): void
     {
-        static::createClient()->request('POST', '/api/reviews', ['json' => [
-            'rating' => '134',
-        ]]);
+        $car = CarFactory::createOne([
+            'brand' => 'Toyota',
+            'model' => 'Camary',
+            'color' => 'red',
+        ]);
+
+        static::createClient()->request(
+            'POST',
+            '/api/reviews',
+            [
+                'json' => [
+                    'rating' => 134,
+                    'car' => '/api/cars/' . $car->getId()
+                ],
+                'headers' => [
+                    'content-type' => 'application/ld+json; charset=utf-8'
+                ]
+            ]);
 
         $this->assertResponseStatusCodeSame(422);
-        $this->assertResponseHeaderSame('content-type', 'application/ld+json; charset=utf-8');
+        $this->assertResponseHeaderSame('content-type', 'application/problem+json; charset=utf-8');
 
         $this->assertJsonContains([
             '@context' => '/contexts/ConstraintViolationList',
-            '@type' => 'ConstraintViolationList',
-            'hydra:title' => 'An error occurred'
+            'title' => 'An error occurred',
+            'hydra:description' => 'rating: This value should be less than 11.',
         ]);
     }
 
     public function testUpdate(): void
     {
-        CarFactory::createOne(['rating' => '8', 'brand' => 'Toyota']);
+        $review = ReviewFactory::createOne(['rating' => 8, 'text' => 'Beauty']);
 
         $client = static::createClient();
-        $rating = $this->findRatingBy(Review::class, ['rating' => '8']);
 
-        // Use the PATCH method here to do a partial update
-        $client->request('PATCH', $rating, [
-            'json' => [
-                'title' => 'updated title',
-            ],
-            'headers' => [
-                'Content-Type' => 'application/merge-patch+json',
-            ]
-        ]);
+        $client->request(
+            'PATCH',
+            '/api/reviews/' . $review->getId(),
+            [
+                'json' => [
+                    'rating' => 6,
+                ],
+                'headers' => [
+                    'Content-Type' => 'application/merge-patch+json',
+                ]
+            ]);
 
         $this->assertResponseIsSuccessful();
         $this->assertJsonContains([
-            '@id' => $rating,
-            'rating' => '8',
-            'text' => 'Nice',
+            '@id' => '/api/reviews/' . $review->getId(),
+            'rating' => 6,
+            'text' => 'Beauty',
         ]);
     }
 
     public function testDelete(): void
     {
-        Review::createOne(['rating' => '8']);
+        $review = ReviewFactory::createOne(['rating' => 9]);
 
         $client = static::createClient();
-        $model = $this->findModelBy(Review::class, ['rating' => '8']);
 
-        $client->request('DELETE', $model);
+        $client->request('DELETE', '/api/reviews/' . $review->getId());
 
         $this->assertResponseStatusCodeSame(204);
+        static::getContainer()->get('doctrine')->getRepository(Review::class)->findOneBy(['rating' => 9]);
     }
 }
