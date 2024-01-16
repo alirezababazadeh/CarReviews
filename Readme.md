@@ -12,6 +12,9 @@ To run the project, use these commands:
 ```
 docker-compose build
 docker-compose up -d
+./database_migrations.sh
+
+Then write 'yes' in the prompt.
 ```
 
 After that, go to the page below:
